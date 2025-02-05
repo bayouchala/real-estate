@@ -11,7 +11,7 @@ export default function Profile() {
   const [filePerc, setFilePerc] = useState(0);
   const [fileUploadError, setFileUploadError] = useState(false);
   const [formData, setFormData] = useState({ avatar: '' });
-  console.log(file);
+  //console.log(file);
 
   useEffect(()=>{
     if(file){
