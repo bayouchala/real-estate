@@ -11,6 +11,7 @@ import {
   signOutUserStart,
 signOutUserSuccess} from '../redux/user/userSlice.js';
 import { useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
 
@@ -182,6 +183,9 @@ export default function Profile() {
         className='bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disabled:opacity-80'>
           {Loading ? 'Updating...' : 'Update'}
         </button>
+        <Link className='bg-green-700 text-white p-3 rounded-lg uppercase text-center hover:opacity-95'to='/create-listing'>
+        Creating listing
+        </Link>
       </form>
       <div className='flex justify-between mt-5'>
         <span 
