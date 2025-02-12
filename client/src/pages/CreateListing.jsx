@@ -1,12 +1,104 @@
+import { useState } from 'react';
 
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
 
 export default function CreateListing() {
-  return (
-    <main className='p-3 max-w-4xl mx-auto'>
-      <h1 className='text-3xl font-semibold text-center my-7'> Create a listing </h1>
-      <form className='flex flex-col sm:flex-row gap-4'>
+  const [files, setFiles] = useState([]);
+  const [formData, setFormData] = useState({
+    imageUrls: [],
+    name: '',
+    description: '',
+    address: '',
+    type: 'rent',
+    bedrooms: 1,
+    bathrooms: 1,
+    regularPrice: 50,
+    discountPrice: 0,
+    offer: false,
+    parking: false,
+    furnished: false,
+  });
+  console.log(formData);
+  const [imageUploadError, setImageUploadError] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  //const [error, setError] = useState(false);
+  //const [loading, setLoading] = useState(false);
+  const handleImageSubmit = async(e) => {
+    e.preventDefault();
+    if(files.length > 0 && files.length + formData.imageUrls.length < 7){
+      setUploading(true);
+      setImageUploadError(false);
+      const promises = [];
 
-        <div className='flex flex-col gap-4 flex-1'>
+      for(let i=0; i < files.length; i++){
+        promises.push(storeImage(files[i]))
+      }
+
+      try {
+        const urls = await Promise.all(promises);
+        setFormData({
+          ...formData,
+          imageUrls: [...formData.imageUrls, ...urls], // Concatenate new URLs
+        });
+        setImageUploadError(false);
+        setUploading(false);
+        
+      } catch (error) {
+        console.error("Cloudinary upload failed:", error);
+        setImageUploadError('Image upload failed');
+        setUploading(false);
+      }
+
+    }else {
+
+      setImageUploadError('You can only upload 6 images per listing');
+      setUploading(false);
+    }
+
+  }
+  const storeImage = async (file) => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET); // Use your upload preset
+      formData.append("cloud_name", CLOUDINARY_CLOUD_NAME); // Use your cloud name
+
+      fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.secure_url) {
+            resolve(data.secure_url);
+          } else {
+            reject(new Error("Upload failed: " + (data.error ? data.error.message : "Unknown error")));
+          }
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  };
+
+  const handleRemoveImage = (index)=> {
+    setFormData({
+       ...formData,
+       imageUrls: formData.imageUrls.filter((_, i)=> i !== index)
+    });
+  };
+  return (
+    <main 
+    className='p-3 max-w-4xl mx-auto'>
+      <h1 
+      className='text-3xl font-semibold text-center my-7'> 
+      Create a listing 
+      </h1>
+      <form 
+      className='flex flex-col sm:flex-row gap-4'>
+        <div 
+        className='flex flex-col gap-4 flex-1'>
           <input type="text" placeholder='Name' className='border p-3 rounded-lg ' id='name' maxLength='62' minLength='10' required />
           <textarea type="text" placeholder='Description' className='border p-3 rounded-lg ' id='description' required />
           <input type="text" placeholder='Address' className='border p-3 rounded-lg ' id='address' required />
@@ -57,16 +149,51 @@ export default function CreateListing() {
             </div>
           </div>
         </div>
-        <div className='flex flex-col flex-1 gap-4'>
-          <p className='font-semibold'>Images:
-          <span className='font-normal text-gray-600 ml-2'>The first image will be the cover (max 6)</span>  
+        <div 
+        className='flex flex-col flex-1 gap-4'>
+          <p 
+          className='font-semibold'>
+            Images:
+          <span 
+          className='font-normal text-gray-600 ml-2'>
+            The first image will be the cover (max 6)
+          </span>  
           </p> 
-          <div className='flex gap-4'>
-            <input className='p-3 border border-gray-300 rounded w-full' type='file' id='images' accept='image/*' multiple />
-            <button className='p-3 text-green-700 border border-green-700 rounded uppercase hover: shadow-xl disabled:opacity-80'>Upload</button>
-          </div> 
-          <button className='p-3 bg-slate-700 text-white rounded-lg uppercase hover:opacity-95 disabled:opacity-80'>Create Listing </button> 
+          <div 
+          className='flex gap-4'>
+            <input 
+            onChange={(e) => setFiles(e.target.files)}
+            className='p-3 border border-gray-300 rounded w-full' 
+            type='file' 
+            id='images' 
+            accept='image/*' 
+            multiple 
+            />
+            <button 
+            type = 'button'
+            disabled={uploading}
+            onClick={handleImageSubmit}
+            className='p-3 text-green-700 border border-green-700 rounded uppercase hover: shadow-xl disabled:opacity-80'>
+              {uploading ? 'uploading ...' : 'upload' }
+            </button>
+          </div>
+          <p className='text-red-700 text-sm'>
+            {imageUploadError && imageUploadError}
+          </p>
+          {
+            formData.imageUrls.length > 0 && formData.imageUrls.map((url, index) => (
+              <div key={url} className='flex justify-between p-3 border items-center'>
+              <img src={url} alt='listing image' className='w-20 h-20 object-contain rounded-lg' />
+              <button type='button' onClick={() => handleRemoveImage(index)} className='p-3 text-red-700 rounded-lg uppercase hover:opacity-75'>Delete</button>
+              </div>
+            ))
+          }
+          <button 
+          className='p-3 bg-slate-700 text-white rounded-lg uppercase hover:opacity-95 disabled:opacity-80'>
+            Create Listing 
+          </button> 
         </div>
+       
       </form>     
     </main>
   )

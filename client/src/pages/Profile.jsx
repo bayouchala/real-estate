@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux';
+import axios from 'axios';
 import { useRef, useState, useEffect } from 'react';
 import { 
   updateUserStart, 
@@ -39,23 +40,24 @@ export default function Profile() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,          
-        }
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, formData, {
+           onUploadProgress: (progressEvent) => {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setFilePerc(progress);
+           }
+        }         
       );
       
-      if (!response.ok) {
+      if (response.status < 200 || response.status >= 300) {
         setFileUploadError(true);
         throw new Error(
           `Cloudinary upload failed with status code: ${response.status}`
         );
       }
-      const data = await response.json();
-      setFormData({ ...formData, avatar: data.secure_url });
-      setFilePerc(100);
+          const data = response.data;
+          setFormData({ ...formData, avatar: data.secure_url });
+          setFilePerc(100);
                               
     } catch (error) {
       console.error('Error uploading to Cloudinary:', error);
